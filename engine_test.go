@@ -255,3 +255,24 @@ func TestConcurrentSameKeyOnlyOneWinner(t *testing.T) {
 		t.Fatal(x, y)
 	}
 }
+
+func TestTextRoundTripRejectsInvalidUTF8(t *testing.T) {
+	var db DB
+	tx := db.Begin()
+	if err := tx.Insert(1, "café 漢字"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Insert(2, string([]byte{255})); !errors.Is(err, ErrInvalidText) {
+		t.Fatal(err)
+	}
+	if _, err := tx.Update(1, string([]byte{255})); !errors.Is(err, ErrInvalidText) {
+		t.Fatal(err)
+	}
+	expect(t, tx, 1, "café 漢字", true)
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	read := db.Begin()
+	defer read.Rollback()
+	expect(t, read, 2, "", false)
+}

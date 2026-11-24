@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // MaxInputBytes bounds both single statements and complete scripts.
@@ -134,6 +135,9 @@ type parser struct {
 func newParser(input string) (*parser, error) {
 	if len(input) > MaxInputBytes {
 		return nil, fmt.Errorf("SQL exceeds %d-byte input limit", MaxInputBytes)
+	}
+	if !utf8.ValidString(input) {
+		return nil, fmt.Errorf("SQL must be valid UTF-8")
 	}
 	p := &parser{input: input}
 	p.advance()

@@ -27,6 +27,7 @@ interactive prompt. Maximum script size is 8 MiB. Values use single quotes and
 double a quote to include it: `'it''s text'`. `--` comments and semicolons inside
 strings are handled by the lexer. Keywords and the fixed table/column names are
 case-insensitive. Keys must fit signed 64-bit integers; values are text only.
+Scripts and text values must be valid UTF-8, so JSON output can preserve them.
 
 Each statement outside an explicit transaction is autocommitted. A script error
 stops execution; pending explicit work is rolled back. Ending a script with an
@@ -119,8 +120,33 @@ Code: `engine.go` is the MVCC layer, `internal/btree` is the ordered index,
 `internal/query` parses/plans SQL, and `internal/runner` connects SQL to transactions.
 The planner is a small explicit choice between key lookup and full scan.
 
-## Next checkpoint
+## SQLite comparison
 
-A reproducible end-to-end comparison against in-memory SQLite is being added.
+With Python 3 and the `sqlite3` CLI installed:
+
+```sh
+make bench
+python3 bench/compare_sqlite.py --binary build/minisql --output bench/observed.json
+```
+
+The [method and limits](bench/README.md) and [recorded local run](bench/observed.json)
+are included. That run inserted 2,000 synthetic rows and performed 2,000 point
+reads per process, with one warmup and five measured repetitions. All 12,000
+selected rows per implementation were checked against known answers.
+
+| CLI | Median whole-process elapsed time |
+| --- | ---: |
+| MiniSQL, Go 1.27.1, macOS arm64 | 12.111 ms |
+| SQLite 3.43.2, macOS arm64 | 11.828 ms |
+
+These numbers describe this particular in-memory CLI workload. They include
+startup, parsing, inserts/commits, reads, JSON serialization and pipe I/O. MiniSQL
+emits a record for every statement; SQLite emits query results only (361,207 vs
+76,905 stdout bytes in this run). SQLite also creates its table in the timed
+process. This does not isolate engine performance or compare durability and SQL
+coverage. Host load changes the result; rerun rather than generalize the numbers.
+
+## Next checkpoints
+
 Persistent pages/WAL, crash recovery, garbage collection, richer SQL and stronger
-isolation remain separate future work. No production durability is claimed.
+isolation remain future work. No production durability is claimed.

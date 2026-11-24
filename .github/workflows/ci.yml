@@ -15,3 +15,4 @@ jobs:
           go-version: '1.22.x'
       - run: make test check build
       - run: ./build/minisql -file examples/demo.sql
+      - run: python3 bench/compare_sqlite.py --binary build/minisql --rows 128 --lookups 128 --repeats 1

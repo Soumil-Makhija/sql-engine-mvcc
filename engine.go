@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/Soumil-Makhija/sql-engine-mvcc/internal/btree"
 )
@@ -17,6 +18,7 @@ var (
 	ErrDuplicateKey   = errors.New("duplicate primary key")
 	ErrConflict       = errors.New("snapshot write conflict; transaction aborted")
 	ErrClockExhausted = errors.New("commit timestamp exhausted")
+	ErrInvalidText    = errors.New("text must be valid UTF-8")
 )
 
 type version struct {
@@ -122,6 +124,9 @@ func (tx *Tx) Insert(key int64, value string) error {
 	if tx.closed {
 		return ErrClosed
 	}
+	if !utf8.ValidString(value) {
+		return ErrInvalidText
+	}
 	if _, exists := tx.lookup(key); exists {
 		return fmt.Errorf("%w: %d", ErrDuplicateKey, key)
 	}
@@ -134,6 +139,9 @@ func (tx *Tx) Update(key int64, value string) (bool, error) {
 	defer tx.db.mu.Unlock()
 	if tx.closed {
 		return false, ErrClosed
+	}
+	if !utf8.ValidString(value) {
+		return false, ErrInvalidText
 	}
 	if _, exists := tx.lookup(key); !exists {
 		return false, nil

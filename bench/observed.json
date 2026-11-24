@@ -1,0 +1,106 @@
+{
+  "correctness": {
+    "all_selected_rows_validated": true,
+    "includes_warmup_validation": true,
+    "selected_rows_checked_per_implementation": 12000,
+    "selected_rows_per_process": 2000
+  },
+  "environment": {
+    "go_version": "go1.27.1",
+    "platform": {
+      "machine": "arm64",
+      "system": "Darwin"
+    },
+    "python_version": "3.14.2",
+    "sqlite_version": "3.43.2 2023-10-10 13:08:14 1b37c146ee9ebb7acd0160c0ab1fd11017a419fa8a3187386ed8cb32b709aapl (64-bit)"
+  },
+  "limitations": [
+    "This is not an isolated engine benchmark and does not establish engine speed claims.",
+    "Elapsed time includes process startup, SQL parsing, inserts, commits, lookups, JSON serialization, pipe I/O and process exit.",
+    "Front ends and output differ: minisql emits JSONL records for every statement; sqlite3 emits JSON arrays only for SELECTs. Captured output sizes are reported.",
+    "SQLite creates its table inside the timed process; minisql has an implicit fixed schema.",
+    "Both databases are in memory. This workload measures no disk durability, recovery or persistent-storage performance.",
+    "The workload contains only insertion and successful primary-key reads; it does not compare SQL coverage, scans, updates, concurrent transactions or MVCC isolation guarantees.",
+    "Warmups and alternating order reduce some noise but do not control host load, scheduling, CPU frequency or operating-system caches."
+  ],
+  "limits": {
+    "input_bytes_max": 8388608,
+    "lookups_min_max": [
+      1,
+      20000
+    ],
+    "repeats_min_max": [
+      1,
+      10
+    ],
+    "rows_min_max": [
+      1,
+      20000
+    ],
+    "timeout_seconds_per_child": 30
+  },
+  "measurements": {
+    "minisql": {
+      "elapsed_ms": [
+        13.824417,
+        11.971041,
+        12.144584,
+        12.06875,
+        12.110541
+      ],
+      "median_ms": 12.110541,
+      "stdout_bytes": [
+        361207,
+        361207,
+        361207,
+        361207,
+        361207
+      ]
+    },
+    "sqlite3": {
+      "elapsed_ms": [
+        12.131584,
+        11.787,
+        12.248916,
+        11.750666,
+        11.828375
+      ],
+      "median_ms": 11.828375,
+      "stdout_bytes": [
+        76905,
+        76905,
+        76905,
+        76905,
+        76905
+      ]
+    }
+  },
+  "method": {
+    "native_schema_setup": "implicit kv table",
+    "run_order": "minisql first on even repeats, sqlite3 first on odd repeats (zero-based)",
+    "scope": "end-to-end subprocess elapsed time with stdin SQL and captured stdout",
+    "sqlite_arguments": [
+      "-batch",
+      "-bail",
+      "-json",
+      ":memory:"
+    ],
+    "sqlite_schema_setup": "CREATE TABLE kv(id INTEGER PRIMARY KEY,value TEXT);",
+    "timer": "time.perf_counter_ns",
+    "validation": "every SELECT result must contain exactly its expected id/value row in statement order; validation time excluded",
+    "warmup_runs_per_implementation": 1
+  },
+  "schema_version": 1,
+  "workload": {
+    "insertion_order": "deterministically shuffled unique integer keys 1..rows",
+    "lookup_order": "deterministic random existing keys, with replacement",
+    "native_input_bytes": 181828,
+    "point_lookups": 2000,
+    "repeats": 5,
+    "rows": 2000,
+    "seed": 20261124,
+    "sqlite_input_bytes": 181880,
+    "transactions_per_process": 2,
+    "value_format": "value-{key:08d}"
+  }
+}

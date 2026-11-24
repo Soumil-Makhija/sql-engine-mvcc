@@ -6,6 +6,15 @@ import (
 	"testing"
 )
 
+func TestUTF8Input(t *testing.T) {
+	if _, err := Parse("INSERT INTO kv VALUES (1, 'café 漢字')"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Parse("INSERT INTO kv VALUES (1, '" + string([]byte{255}) + "')"); err == nil {
+		t.Fatal("invalid UTF-8 must be rejected")
+	}
+}
+
 func TestParseDialectAndPlans(t *testing.T) {
 	tests := []struct {
 		sql   string
